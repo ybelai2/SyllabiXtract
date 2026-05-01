@@ -3,17 +3,16 @@ package com.syllabixtract.api.services.impl;
 import com.syllabixtract.api.controllers.UserSyncRequest;
 import com.syllabixtract.api.domain.entities.UserEntity;
 import com.syllabixtract.api.repositories.UserRepository;
-import com.syllabixtract.api.services.UserService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
 @Service
-public class UserServiceImpl implements UserService {
+public class UserService implements com.syllabixtract.api.services.UserService {
 
     private final UserRepository userRepository;
 
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 

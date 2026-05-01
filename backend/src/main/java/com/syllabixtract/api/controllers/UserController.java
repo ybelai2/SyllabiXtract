@@ -1,6 +1,6 @@
 package com.syllabixtract.api.controllers;
 
-import com.syllabixtract.api.services.impl.UserServiceImpl;
+import com.syllabixtract.api.services.impl.UserService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -9,12 +9,12 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping
 public class UserController {
 
-    private final UserServiceImpl userServiceImpl;
+    private final UserService userService;
     @Value("${api.secret}")
     private String apiSecret;
 
-    public UserController(UserServiceImpl userServiceImpl) {
-        this.userServiceImpl = userServiceImpl;
+    public UserController(UserService userService) {
+        this.userService = userService;
     }
 
 
@@ -30,7 +30,7 @@ public class UserController {
             return ResponseEntity.status(403).build();
         }
 
-        userServiceImpl.syncUser(request);
+        userService.syncUser(request);
         return ResponseEntity.ok().build();
     }
 }
