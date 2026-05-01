@@ -31,9 +31,7 @@ export default function ProfileDropdown({ darkMode, userName, displayProfileDrop
             <p className={`text-xs font-medium ${metaInfoStyle}`}>Signed in as</p>
             <p className={`text-sm font-bold truncate ${userNameStyle}`}>{userName}</p>
           </div>
-          <button className={`w-full text-left px-4 py-2 text-sm font-medium rounded-lg transition-colors ${menuItemStyle}`}>
-            Settings
-          </button>
+          
           <div className={`h-px my-1 ${dividerLineStyle}`} />
           <button
             onClick={() => { setdisplayProfileDropdown(false); resetUserSession(); }}
