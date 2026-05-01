@@ -38,8 +38,8 @@ import App from './App.jsx'
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Auth0Provider
-      domain="dev-xw5vht1v7asa2qsb.us.auth0.com"
-      clientId="lr6m3WjVxb2AjNbz8LDFSahjCszu8sED"
+      domain="dev-evpwqsgmn03lqsfk.us.auth0.com"
+      clientId="SeOofXeNJOUQSgA7uGbBnFSgl7pJhWej"
       authorizationParams={{
         redirect_uri: window.location.origin,
         audience: "https://api.syllabixtract.com"
