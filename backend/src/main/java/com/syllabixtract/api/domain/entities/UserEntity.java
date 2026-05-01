@@ -21,15 +21,15 @@ public class UserEntity {
     @GeneratedValue (strategy = GenerationType.SEQUENCE)
     private Long id;
 
+    @Column(unique = true)
+    private String auth0Id;
+
     private String first_name;
     private String last_name;
 
 
     @Column (nullable = false, unique = true)
     private String email;
-
-    @Column (nullable = false)
-    private String password;
 
     @Column (updatable = false)
     private LocalDateTime created_at ;

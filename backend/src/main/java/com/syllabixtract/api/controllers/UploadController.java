@@ -1,69 +1,142 @@
 package com.syllabixtract.api.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.syllabixtract.api.domain.dto.ParsedSyllabusDTO;
+import com.syllabixtract.api.domain.entities.*;
+import com.syllabixtract.api.repositories.*;
 import com.syllabixtract.api.services.GeminiService;
 import com.syllabixtract.api.services.LlamaParseService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.syllabixtract.api.services.UserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestController
+@RequiredArgsConstructor
 public class UploadController {
 
-    // AI Services
-    @Autowired
-    private LlamaParseService llamaParseService;
+    private final LlamaParseService llamaParseService;
+    private final GeminiService geminiService;
+    private final UserService userService;
+    private final UserRepository userRepository;
+    private final SyllabiRepository syllabiRepository;
+    private final CourseRepository coursesRepository;
+    private final DeadlineRepository deadlineRepository;
+    private final ParseJobRepository parseJobRepository;
 
-    @Autowired
-    private GeminiService geminiService;
-
-    // The Health Check Route (Used by Render to make sure the server is awake)
     @GetMapping("/")
     public Map<String, String> healthCheck() {
         return Map.of("message", "SyllabiXtract Java Backend is running!");
     }
 
-    // The File Upload Route (Receives the PDF from the frontend)
     @PostMapping("/upload")
-    public ResponseEntity<Map<String, Object>> handleUpload(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Map<String, Object>> handleUpload(
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication) {
+
         System.out.println("--- Starting New Upload: " + file.getOriginalFilename() + " ---");
         Map<String, Object> response = new HashMap<>();
 
-        // Step 3: Error Handling
-        // Try-catch block around the AI calls. If LlamaParse or Gemini fails
-        // or times out, send a "status": "error" response back to React
-        // so the frontend loading spinner doesn't spin forever.
         try {
+            // Get the logged-in user — all data will be scoped to them
+            String auth0Id = authentication.getName();
+            UserEntity user = userRepository.findByAuth0Id(auth0Id)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
-            // Step 1: LlamaParse Integration
-            // - Convert the incoming "MultipartFile" into a format LlamaParse accepts
-            // - Send the file to the LlamaParse API using the LLAMA_CLOUD_API_KEY.
-            // - Wait for the response and save the extracted text to a String variable.
+            // Save syllabi record
+            SyllabiEntity syllabi = SyllabiEntity.builder()
+                    .file_name(file.getOriginalFilename())
+                    .file_type(file.getContentType())
+                    .uploaded_at(LocalDateTime.now())
+                    .is_parsed(false)
+                    .build();
+            syllabiRepository.save(syllabi);
+
+            // Create parse job with PENDING status
+            ParseJobEntity parseJob = ParseJobEntity.builder()
+                    .syllabiEntity(syllabi)
+                    .status("PENDING")
+                    .started_at(LocalDateTime.now())
+                    .retry_count(0)
+                    .build();
+            parseJobRepository.save(parseJob);
+
+            // Step 1: LlamaParse
             System.out.println("Step 1: Sending to LlamaParse...");
             String rawSyllabusText = llamaParseService.parseDocument(file);
 
-            // Step 2: Gemini Integration
-            // - Take the "rawSyllabusText" and combine it with the custom prompt for Gemini
-            // (e.g., "Find all assignments and dates in this text and return as JSON").
-            // - Send that combined string to the Gemini API using your GEMINI_API_KEY.
-            // - Wait for the response and save the structured JSON to a variable.
+            // Save raw text to syllabi
+            syllabi.setRaw_text(rawSyllabusText);
+            syllabiRepository.save(syllabi);
+
+            // Step 2: Gemini
             System.out.println("Step 2: Sending to Gemini...");
             String structuredJsonData = geminiService.extractScheduleAsJson(rawSyllabusText);
 
-            // Handles the map for the AI processing
+            // Parse Gemini JSON response
             ObjectMapper mapper = new ObjectMapper();
-            Object scheduleData = mapper.readValue(structuredJsonData, Object.class);
+            ParsedSyllabusDTO parsed = mapper.readValue(structuredJsonData, ParsedSyllabusDTO.class);
 
-            System.out.println("Step 3: Processing complete. Dispatching to frontend.");
+            // Save course
+            CourseEntity course = CourseEntity.builder()
+                    .user(user)
+                    .course_code(parsed.getCourse_code())
+                    .course_name(parsed.getCourse_name())
+                    .created_at(LocalDateTime.now())
+                    .build();
+            coursesRepository.save(course);
+
+            // Link syllabi to course
+            syllabi.setCourse(course);
+            syllabi.setIs_parsed(true);
+            syllabiRepository.save(syllabi);
+
+            // Save each deadline
+            if (parsed.getDeadlines() != null) {
+                for (var d : parsed.getDeadlines()) {
+                    LocalDate dueDate = null;
+                    LocalTime dueTime = null;
+
+                    if (d.getDue_date() != null && !d.getDue_date().equals("null")) {
+                        dueDate = LocalDate.parse(d.getDue_date());
+                    }
+                    if (d.getDue_time() != null && !d.getDue_time().equals("null")) {
+                        dueTime = LocalTime.parse(d.getDue_time());
+                    }
+
+                    DeadlineEntity deadline = DeadlineEntity.builder()
+                            .syllabiEntity(syllabi)
+                            .courseEntity(course)
+                            .title(d.getTitle())
+                            .description(d.getDescription())
+                            .due_date(dueDate)
+                            .due_time(dueTime)
+                            .is_confirmed(false)
+                            .is_completed(false)
+                            .build();
+                    deadlineRepository.save(deadline);
+                }
+            }
+
+            // Mark parse job as complete
+            parseJob.setStatus("COMPLETE");
+            parseJob.setCompleted_at(LocalDateTime.now());
+            parseJobRepository.save(parseJob);
+
+            System.out.println("Step 3: Processing complete.");
             response.put("status", "success");
             response.put("filename", file.getOriginalFilename());
-            response.put("message", "File processed successfully by the AI Pipeline!");
-            response.put("events", scheduleData);
+            response.put("message", "File processed successfully!");
+            response.put("events", parsed);
 
             return ResponseEntity.ok(response);
 

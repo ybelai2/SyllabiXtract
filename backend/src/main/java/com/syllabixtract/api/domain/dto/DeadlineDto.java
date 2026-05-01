@@ -20,8 +20,8 @@ public class DeadlineDto {
     private CourseDto courseDto;
     private String description;
     private String title;
-    private LocalDate due_date;
-    private LocalTime due_time;
+    private String due_date;
+    private String due_time;
     private LocalDateTime created_at;
     private Boolean is_confirmed;
     private Boolean is_completed;
