@@ -15,10 +15,10 @@ import java.time.LocalDateTime;
 public class UserDto{
 
     private Long id;
+    private String auth0Id;
     private String first_name;
     private String last_name;
     private String email;
-    private String password;
     private LocalDateTime created_at ;
 
 
