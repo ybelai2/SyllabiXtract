@@ -1,4 +1,4 @@
-package com.syllabixtract.api.controllers;
+package com.syllabixtract.api.domain.dto;
 
 import lombok.Data;
 

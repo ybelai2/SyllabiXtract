@@ -1,9 +1,12 @@
 package com.syllabixtract.api.controllers;
 
-import com.syllabixtract.api.services.impl.UserService;
+
+import com.syllabixtract.api.domain.dto.UserSyncRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.syllabixtract.api.services.UserService;
+import com.syllabixtract.api.domain.dto.UserSyncRequest;
 
 @RestController
 @RequestMapping

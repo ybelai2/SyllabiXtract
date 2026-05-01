@@ -1,10 +1,6 @@
 package com.syllabixtract.api.services;
 
-import com.syllabixtract.api.controllers.UserSyncRequest;
-import com.syllabixtract.api.domain.entities.UserEntity;
-import com.syllabixtract.api.repositories.UserRepository;
-
-import java.time.LocalDateTime;
+import com.syllabixtract.api.domain.dto.UserSyncRequest;
 
 public interface UserService {
     void syncUser(UserSyncRequest request);

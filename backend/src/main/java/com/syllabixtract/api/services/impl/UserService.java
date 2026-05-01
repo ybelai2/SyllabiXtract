@@ -1,6 +1,6 @@
 package com.syllabixtract.api.services.impl;
 
-import com.syllabixtract.api.controllers.UserSyncRequest;
+import com.syllabixtract.api.domain.dto.UserSyncRequest;
 import com.syllabixtract.api.domain.entities.UserEntity;
 import com.syllabixtract.api.repositories.UserRepository;
 import org.springframework.stereotype.Service;
