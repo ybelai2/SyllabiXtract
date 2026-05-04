@@ -7,11 +7,6 @@ import ProfileDropdown from './components/ProfileDropdown';
 import UploadCard from './components/UploadCard';
 import SyllabusCalendar from './components/SyllabusCalendar';
 
-// TODO:
-// Make the main page support .doc files along with pdf.
-// IDK some other stuff when I think of it
-
-
 // Main app function for main page
 function App() {
   const { 
@@ -29,7 +24,8 @@ function App() {
   const [displayProfileDropdown, setdisplayProfileDropdown] = useState(false); 
   const [file, setFile] = useState(null);
   const [uploadStatus, setUploadStatus] = useState(false);
-  const [extractedData, setExtractedData] = useState(null);
+  // CHANGED: Initialize as an empty array to hold multiple courses
+  const [extractedData, setExtractedData] = useState([]);
 
   const handleFileChange = (event) => {
     const selectedFile = event.target.files[0];
@@ -66,7 +62,8 @@ function App() {
       const data = await response.json();
       
       if (data && data.events) {
-        setExtractedData(data.events); 
+        // Append the new course to the existing array of courses
+        setExtractedData(prev => [...prev, data.events]); 
       } else {
         throw new Error("AI returned an empty or invalid schedule.");
       }
@@ -109,9 +106,7 @@ function App() {
   return (
     <div className="min-h-screen w-full relative flex flex-col items-center font-sans overflow-x-hidden">
       
-      {/*
-        WAVY STRAND-LIKE AURORA BACKGROUND (I can't for the life of me get this to work the way I want so this is good enough)
-      */}
+      {/* WAVY STRAND-LIKE AURORA BACKGROUND */}
       <div className={`fixed inset-0 z-0 transition-colors duration-1000 overflow-hidden ${darkMode ? 'bg-[#050810]' : 'bg-slate-50'}`}>
         
         <style>{`
@@ -220,7 +215,8 @@ function App() {
               onremoveSelectedFile={removeSelectedFile}
             />
 
-            {extractedData && (
+            {/* Render if we have at least 1 course */}
+            {extractedData.length > 0 && (
               <SyllabusCalendar 
                 data={extractedData} 
                 darkMode={darkMode} 
