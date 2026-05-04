@@ -26,7 +26,6 @@ public class UploadController {
 
     private final LlamaParseService llamaParseService;
     private final GeminiService geminiService;
-    private final UserService userService;
     private final UserRepository userRepository;
     private final SyllabiRepository syllabiRepository;
     private final CourseRepository coursesRepository;
@@ -43,14 +42,27 @@ public class UploadController {
             @RequestParam("file") MultipartFile file,
             Authentication authentication) {
 
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "File is empty"));
+        }
+
         System.out.println("--- Starting New Upload: " + file.getOriginalFilename() + " ---");
         Map<String, Object> response = new HashMap<>();
 
         try {
-            // Get the logged-in user — all data will be scoped to them
+            // Get the logged-in user — create them on the fly if the sync hasn't happened
+            // yet
             String auth0Id = authentication.getName();
             UserEntity user = userRepository.findByAuth0Id(auth0Id)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
+                    .orElseGet(() -> {
+                        System.out.println("JIT User Creation for: " + auth0Id);
+                        UserEntity newUser = UserEntity.builder()
+                                .auth0Id(auth0Id)
+                                .email("pending-sync@syllabixtract.com")
+                                .created_at(LocalDateTime.now())
+                                .build();
+                        return userRepository.save(newUser);
+                    });
 
             // Save syllabi record
             SyllabiEntity syllabi = SyllabiEntity.builder()
@@ -73,8 +85,6 @@ public class UploadController {
             // Step 1: LlamaParse
             System.out.println("Step 1: Sending to LlamaParse...");
             String rawSyllabusText = llamaParseService.parseDocument(file);
-
-            // Save raw text to syllabi
             syllabi.setRaw_text(rawSyllabusText);
             syllabiRepository.save(syllabi);
 
@@ -82,7 +92,6 @@ public class UploadController {
             System.out.println("Step 2: Sending to Gemini...");
             String structuredJsonData = geminiService.extractScheduleAsJson(rawSyllabusText);
 
-            // Parse Gemini JSON response
             ObjectMapper mapper = new ObjectMapper();
             ParsedSyllabusDTO parsed = mapper.readValue(structuredJsonData, ParsedSyllabusDTO.class);
 
@@ -106,10 +115,10 @@ public class UploadController {
                     LocalDate dueDate = null;
                     LocalTime dueTime = null;
 
-                    if (d.getDue_date() != null && !d.getDue_date().equals("null")) {
+                    if (d.getDue_date() != null && !d.getDue_date().equals("null") && !d.getDue_date().isEmpty()) {
                         dueDate = LocalDate.parse(d.getDue_date());
                     }
-                    if (d.getDue_time() != null && !d.getDue_time().equals("null")) {
+                    if (d.getDue_time() != null && !d.getDue_time().equals("null") && !d.getDue_time().isEmpty()) {
                         dueTime = LocalTime.parse(d.getDue_time());
                     }
 

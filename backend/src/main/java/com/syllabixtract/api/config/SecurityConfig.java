@@ -3,11 +3,13 @@ package com.syllabixtract.api.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
@@ -30,41 +32,44 @@ public class SecurityConfig {
         @Bean
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                 http
-                                // 1. Tell the Security policy to use custom CORS rules
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                                 .csrf(csrf -> csrf.disable())
                                 .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**")
-                                                .permitAll()
+                                                // Allow preflight OPTIONS requests for CORS
+                                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                                 .requestMatchers("/api/public/**").permitAll()
                                                 .requestMatchers("/api/public/health").permitAll()
-                                                .requestMatchers("/").permitAll() // Allow Render root health check
+                                                .requestMatchers("/").permitAll()
                                                 .anyRequest().authenticated())
                                 .oauth2ResourceServer(oauth2 -> oauth2
                                                 .jwt(jwt -> jwt.decoder(jwtDecoder())));
                 return http.build();
         }
 
-        // 2. The Whitelist for Allowed Connections
         @Bean
         public CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration configuration = new CorsConfiguration();
 
-                // Allowed origins (Vercel app and local dev)
+                // Allowed origins
                 configuration.setAllowedOrigins(Arrays.asList(
                                 "https://syllabi-xtract.vercel.app",
                                 "http://localhost:5173",
                                 "http://localhost:3000"));
 
-                // Allow all standard methods including the OPTIONS preflight
-                configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                // Allow all standard methods
+                configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
 
-                // Allow necessary headers including the Authorization token
-                configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
+                // Allow necessary headers for file uploads and Auth0 tokens
+                configuration.setAllowedHeaders(Arrays.asList(
+                                "Authorization",
+                                "Content-Type",
+                                "Accept",
+                                "Origin",
+                                "X-Requested-With"));
+
                 configuration.setAllowCredentials(true);
 
                 UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-                // Apply these rules to all endpoints
                 source.registerCorsConfiguration("/**", configuration);
                 return source;
         }
@@ -74,8 +79,8 @@ public class SecurityConfig {
                 NimbusJwtDecoder jwtDecoder = JwtDecoders.fromOidcIssuerLocation(issuer);
 
                 OAuth2TokenValidator<Jwt> audienceValidator = token -> token.getAudience().contains(audience)
-                                ? org.springframework.security.oauth2.core.OAuth2TokenValidatorResult.success()
-                                : org.springframework.security.oauth2.core.OAuth2TokenValidatorResult
+                                ? OAuth2TokenValidatorResult.success()
+                                : OAuth2TokenValidatorResult
                                                 .failure(new org.springframework.security.oauth2.core.OAuth2Error(
                                                                 "invalid_token", "Invalid audience", null));
 

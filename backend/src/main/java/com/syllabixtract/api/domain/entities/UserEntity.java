@@ -14,28 +14,27 @@ import java.time.LocalDateTime;
 @Data
 @Builder
 @Entity
-@Table (name = "users")
+@Table(name = "users")
 public class UserEntity {
 
     @Id
-    @GeneratedValue (strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // Switched from SEQUENCE to match your other tables
     private Long id;
 
-    @Column(unique = true)
+    @Column(name = "auth0_id", unique = true) // Explicitly name it auth0_id
     private String auth0Id;
 
     private String first_name;
     private String last_name;
 
-
-    @Column (nullable = false, unique = true)
+    @Column(nullable = false, unique = true)
     private String email;
 
-    @Column (updatable = false)
-    private LocalDateTime created_at ;
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime created_at;
 
     @PrePersist
-    public void onCreate(){
+    public void onCreate() {
         this.created_at = LocalDateTime.now();
     }
 }
