@@ -72,7 +72,7 @@ function App() {
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await fetch('https://syllabixtract-api.onrender.com/upload', {
+        const response = await fetch('https://syllabi-xtract.vercel.app/upload', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`
