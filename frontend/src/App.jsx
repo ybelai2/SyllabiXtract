@@ -22,18 +22,29 @@ function App() {
   
   const [displayProfileDropdown, setdisplayProfileDropdown] = useState(false); 
   
-  // CHANGED: File state is now an array
   const [files, setFiles] = useState([]);
   const [uploadStatus, setUploadStatus] = useState(false);
   const [extractedData, setExtractedData] = useState([]);
 
-  // CHANGED: Handle multiple files being dropped or selected
+  // CHANGED: Added support for .doc and .docx file validation
   const handleFileChange = (event) => {
     const selectedFiles = Array.from(event.target.files || event.dataTransfer.files);
     
-    const validFiles = selectedFiles.filter(f => f.type === "application/pdf");
+    const allowedTypes = [
+      "application/pdf", 
+      "application/msword", 
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ];
+
+    const validFiles = selectedFiles.filter(f => 
+      allowedTypes.includes(f.type) || 
+      f.name.toLowerCase().endsWith('.pdf') || 
+      f.name.toLowerCase().endsWith('.doc') || 
+      f.name.toLowerCase().endsWith('.docx')
+    );
+    
     if (validFiles.length !== selectedFiles.length) {
-      alert("Some files were skipped. Please select only valid PDF files.");
+      alert("Some files were skipped. Please select only PDF or Word documents.");
     }
     
     // Add new valid files to the existing queue
@@ -45,12 +56,10 @@ function App() {
     }
   };
 
-  // CHANGED: Remove a specific file from the queue by index
   const removeFile = (indexToRemove) => {
     setFiles(prev => prev.filter((_, index) => index !== indexToRemove));
   };
 
-  // CHANGED: Upload all files concurrently
   const handleUpload = async () => {
     if (files.length === 0) {
       alert("Select at least one syllabus first!");
@@ -195,7 +204,6 @@ function App() {
               </p>
             </header>
 
-            {/* CHANGED: Passing files array and removeFile index function */}
             <UploadCard
               darkMode={darkMode}
               files={files}
