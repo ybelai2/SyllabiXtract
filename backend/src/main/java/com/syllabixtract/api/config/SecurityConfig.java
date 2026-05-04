@@ -34,6 +34,8 @@ public class SecurityConfig {
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                                 .csrf(csrf -> csrf.disable())
                                 .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**")
+                                                .permitAll()
                                                 .requestMatchers("/api/public/**").permitAll()
                                                 .requestMatchers("/api/public/health").permitAll()
                                                 .requestMatchers("/").permitAll() // Allow Render root health check

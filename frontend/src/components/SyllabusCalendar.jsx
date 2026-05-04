@@ -22,7 +22,7 @@ const Starfield = ({ darkMode }) => {
         // Twinkling parameters
         pulseDuration: `${Math.random() * 4 + 2}s`, // 2s to 6s twinkle cycle
         pulseDelay: `-${Math.random() * 5}s`,
-        // Layered box-shadow: tight white core + wide blue/cyan halo
+        // Layered box shadow: tight white core + wide blue/cyan halo
         boxShadow: `0 0 ${glowCore}px ${sizeVal}px rgba(255, 255, 255, 0.9), 0 0 ${glowHalo}px ${sizeVal * 2}px rgba(96, 165, 250, 0.6)`,
       };
     })
