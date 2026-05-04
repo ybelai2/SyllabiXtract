@@ -7,7 +7,6 @@ import ProfileDropdown from './components/ProfileDropdown';
 import UploadCard from './components/UploadCard';
 import SyllabusCalendar from './components/SyllabusCalendar';
 
-// Main app function for main page
 function App() {
   const { 
     loginWithRedirect, 
@@ -22,65 +21,102 @@ function App() {
   const { darkMode, toggleTheme } = useTheme();
   
   const [displayProfileDropdown, setdisplayProfileDropdown] = useState(false); 
-  const [file, setFile] = useState(null);
+  
+  // CHANGED: File state is now an array
+  const [files, setFiles] = useState([]);
   const [uploadStatus, setUploadStatus] = useState(false);
-  // CHANGED: Initialize as an empty array to hold multiple courses
   const [extractedData, setExtractedData] = useState([]);
 
+  // CHANGED: Handle multiple files being dropped or selected
   const handleFileChange = (event) => {
-    const selectedFile = event.target.files[0];
-    if (selectedFile && selectedFile.type === "application/pdf") {
-      setFile(selectedFile);
-    } else {
-      alert("Please select a valid PDF file.");
+    const selectedFiles = Array.from(event.target.files || event.dataTransfer.files);
+    
+    const validFiles = selectedFiles.filter(f => f.type === "application/pdf");
+    if (validFiles.length !== selectedFiles.length) {
+      alert("Some files were skipped. Please select only valid PDF files.");
+    }
+    
+    // Add new valid files to the existing queue
+    setFiles(prev => [...prev, ...validFiles]);
+    
+    // Reset the input so the same files can be selected again if needed
+    if (event.target.value) {
+      event.target.value = '';
     }
   };
 
+  // CHANGED: Remove a specific file from the queue by index
+  const removeFile = (indexToRemove) => {
+    setFiles(prev => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  // CHANGED: Upload all files concurrently
   const handleUpload = async () => {
-    if (!file) {
-      alert("Select a syllabus first!");
+    if (files.length === 0) {
+      alert("Select at least one syllabus first!");
       return;
     }
 
     setUploadStatus(true);
-    const formData = new FormData();
-    formData.append('file', file);
 
     try {
       const token = await getAccessTokenSilently();
 
-      const response = await fetch('https://syllabixtract-api.onrender.com/upload', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        body: formData,
+      // Create an array of promises so they upload at the same time
+      const uploadPromises = files.map(async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('https://syllabixtract-api.onrender.com/upload', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+          body: formData,
+        });
+
+        if (!response.ok) throw new Error(`Backend failed for ${file.name}`);
+
+        const data = await response.json();
+        if (data && data.events) {
+          return data.events;
+        } else {
+          throw new Error(`AI returned empty data for ${file.name}`);
+        }
       });
 
-      if (!response.ok) throw new Error('Backend upload failed');
+      // Wait for all uploads to finish. allSettled prevents one failure from crashing the rest.
+      const results = await Promise.allSettled(uploadPromises);
 
-      const data = await response.json();
-      
-      if (data && data.events) {
-        // Append the new course to the existing array of courses
-        setExtractedData(prev => [...prev, data.events]); 
-      } else {
-        throw new Error("AI returned an empty or invalid schedule.");
+      const successfulEvents = [];
+      const errors = [];
+
+      results.forEach(result => {
+        if (result.status === 'fulfilled') {
+          successfulEvents.push(result.value);
+        } else {
+          errors.push(result.reason.message);
+        }
+      });
+
+      // Add the successful ones to the calendar
+      if (successfulEvents.length > 0) {
+        setExtractedData(prev => [...prev, ...successfulEvents]);
+        setFiles([]); // Clear queue only if we succeeded
+      }
+
+      // Warn the user if any specific files failed
+      if (errors.length > 0) {
+        alert("Some files failed to process:\n" + errors.join('\n'));
       }
 
     } catch (error) {
       console.error("Upload Error:", error);
-      alert("Failed to process syllabus. Error: " + error.message);
+      alert("Failed to connect to the server.");
     } finally {
       setUploadStatus(false);
     }
   };
-
-  function removeSelectedFile() {
-    setFile(null);
-    const input = document.getElementById('file-input');
-    if (input) input.value = '';
-  }
 
   if (isLoading) {
     return <div className={`min-h-screen w-full ${darkMode ? 'bg-[#050810]' : 'bg-white'}`}></div>;
@@ -108,7 +144,6 @@ function App() {
       
       {/* WAVY STRAND-LIKE AURORA BACKGROUND */}
       <div className={`fixed inset-0 z-0 transition-colors duration-1000 overflow-hidden ${darkMode ? 'bg-[#050810]' : 'bg-slate-50'}`}>
-        
         <style>{`
           @keyframes auroraFlow {
             0% { transform: skewX(-15deg) translateX(-10%) translateY(0); opacity: 0.4; }
@@ -125,47 +160,9 @@ function App() {
             50% { opacity: 0.1; transform: scale(0.6); filter: brightness(0.5); }
           }
         `}</style>
-
-        {/* Ribbon 1: Deep Cyan Strand */}
-        <div 
-          className="absolute pointer-events-none w-[120vw] h-[60vh] opacity-40"
-          style={{
-            top: '-10%',
-            left: '-20%',
-            background: 'linear-gradient(90deg, transparent 0%, #00FFFF 50%, transparent 100%)',
-            filter: 'blur(110px)',
-            boxShadow: '0 0 100px 20px #00FFFF',
-            animation: 'auroraFlow 22s ease-in-out infinite',
-          }}
-        />
-
-        {/* Ribbon 2: Wavy Purple Curtain */}
-        <div 
-          className="absolute pointer-events-none w-[140vw] h-[70vh] opacity-30"
-          style={{
-            bottom: '10%',
-            right: '-30%',
-            background: 'linear-gradient(90deg, transparent 0%, #9400D3 50%, transparent 100%)',
-            filter: 'blur(130px)',
-            boxShadow: '0 0 120px 30px #9400D3',
-            animation: 'auroraFlowSecondary 28s ease-in-out infinite',
-          }}
-        />
-
-        {/* Ribbon 3: Overlapping Teal/Green accents */}
-        <div 
-          className="absolute pointer-events-none w-[100vw] h-[40vh] opacity-20"
-          style={{
-            top: '20%',
-            left: '10%',
-            background: 'linear-gradient(90deg, transparent 0%, #14C8D8 50%, transparent 100%)',
-            filter: 'blur(100px)',
-            boxShadow: '0 0 80px 20px #14C8D8',
-            animation: 'auroraFlow 18s ease-in-out infinite reverse',
-          }}
-        />
-
-        {/* Starfield with Diamond Stars */}
+        <div className="absolute pointer-events-none w-[120vw] h-[60vh] opacity-40" style={{ top: '-10%', left: '-20%', background: 'linear-gradient(90deg, transparent 0%, #00FFFF 50%, transparent 100%)', filter: 'blur(110px)', boxShadow: '0 0 100px 20px #00FFFF', animation: 'auroraFlow 22s ease-in-out infinite' }} />
+        <div className="absolute pointer-events-none w-[140vw] h-[70vh] opacity-30" style={{ bottom: '10%', right: '-30%', background: 'linear-gradient(90deg, transparent 0%, #9400D3 50%, transparent 100%)', filter: 'blur(130px)', boxShadow: '0 0 120px 30px #9400D3', animation: 'auroraFlowSecondary 28s ease-in-out infinite' }} />
+        <div className="absolute pointer-events-none w-[100vw] h-[40vh] opacity-20" style={{ top: '20%', left: '10%', background: 'linear-gradient(90deg, transparent 0%, #14C8D8 50%, transparent 100%)', filter: 'blur(100px)', boxShadow: '0 0 80px 20px #14C8D8', animation: 'auroraFlow 18s ease-in-out infinite reverse' }} />
         <div className="absolute inset-0 z-0 pointer-events-none select-none text-white font-serif">
           <div className="absolute text-xl" style={{ top: '15%', left: '10%', textShadow: '0 0 15px #00FFFF', animation: 'starTwinkle 4s ease-in-out infinite' }}>✦</div>
           <div className="absolute text-2xl" style={{ top: '70%', right: '12%', textShadow: '0 0 20px #00FFFF', animation: 'starTwinkle 5s ease-in-out infinite 1s' }}>✦</div>
@@ -173,14 +170,11 @@ function App() {
           <div className="absolute text-xl" style={{ top: '85%', left: '25%', textShadow: '0 0 20px #9400D3', animation: 'starTwinkle 6s ease-in-out infinite 2s' }}>✦</div>
           <div className="absolute text-sm" style={{ top: '45%', left: '5%', textShadow: '0 0 10px #ffffff', animation: 'starTwinkle 3s ease-in-out infinite 1.5s' }}>✦</div>
         </div>
-
       </div>
 
       <div className="relative z-10 w-full flex flex-col items-center py-12 px-4">
-
         {isAuthenticated && (
           <div className="w-full flex flex-col items-center animate-in fade-in duration-500">
-            
             <ProfileDropdown
               darkMode={darkMode}
               userName={user?.nickname || user?.name || user?.email || "User"}
@@ -192,30 +186,25 @@ function App() {
             <header className="text-center w-full max-w-2xl mb-10 mt-12 relative z-10">
               <h1 
                 className="text-7xl font-black tracking-tighter mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500"
-                style={{ 
-                  filter: darkMode 
-                    ? 'drop-shadow(0px 0px 15px rgba(34, 211, 238, 0.6)) drop-shadow(0px 0px 30px rgba(168, 85, 247, 0.4))' 
-                    : 'none' 
-                }}
+                style={{ filter: darkMode ? 'drop-shadow(0px 0px 15px rgba(34, 211, 238, 0.6)) drop-shadow(0px 0px 30px rgba(168, 85, 247, 0.4))' : 'none' }}
               >
                 SyllabiXtract
               </h1>
-              <p className={`text-xl font-bold max-w-lg text-center leading-relaxed mx-auto drop-shadow-md
-                ${darkMode ? 'text-white/90' : 'text-slate-800'}`}>
+              <p className={`text-xl font-bold max-w-lg text-center leading-relaxed mx-auto drop-shadow-md ${darkMode ? 'text-white/90' : 'text-slate-800'}`}>
                 Convert your messy syllabus into an organized calendar in seconds.
               </p>
             </header>
 
+            {/* CHANGED: Passing files array and removeFile index function */}
             <UploadCard
               darkMode={darkMode}
-              file={file}
+              files={files}
               uploadStatus={uploadStatus}
               onFileChange={handleFileChange}
               onUpload={handleUpload}
-              onremoveSelectedFile={removeSelectedFile}
+              onRemoveFile={removeFile}
             />
 
-            {/* Render if we have at least 1 course */}
             {extractedData.length > 0 && (
               <SyllabusCalendar 
                 data={extractedData} 
