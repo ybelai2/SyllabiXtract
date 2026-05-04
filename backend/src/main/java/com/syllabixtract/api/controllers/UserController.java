@@ -1,6 +1,5 @@
 package com.syllabixtract.api.controllers;
 
-
 import com.syllabixtract.api.domain.dto.UserSyncRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -13,16 +12,12 @@ import com.syllabixtract.api.domain.dto.UserSyncRequest;
 public class UserController {
 
     private final UserService userService;
-    @Value("${api.secret}")
+    @Value("${API_SECRET}")
     private String apiSecret;
 
     public UserController(UserService userService) {
         this.userService = userService;
     }
-
-
-
-
 
     @PostMapping("/api/public/users/sync")
     public ResponseEntity<?> syncUser(
