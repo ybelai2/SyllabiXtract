@@ -13,30 +13,31 @@ import java.time.LocalDateTime;
 @Data
 @Builder
 @Entity
-@Table (name ="syllabus")
+@Table(name = "syllabus")
 public class SyllabiEntity {
 
     @Id
-    @GeneratedValue (strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
-    @JoinColumn (name= "course_id")
+    @JoinColumn(name = "course_id")
+    @org.hibernate.annotations.OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
     private CourseEntity course;
+
     private String file_name;
     private String file_type;
     private String storage_url;
 
-    @Column (updatable = false)
+    @Column(updatable = false)
     private LocalDateTime uploaded_at;
     private Boolean is_parsed;
 
-    @Column (columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private String raw_text;
 
-
     @PrePersist
-    public void onUpload(){
+    public void onUpload() {
         this.uploaded_at = LocalDateTime.now();
     }
 }

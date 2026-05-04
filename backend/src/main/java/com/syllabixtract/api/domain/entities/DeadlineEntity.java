@@ -15,7 +15,7 @@ import java.time.LocalTime;
 @Data
 @Builder
 @Entity
-@Table(name ="deadlines")
+@Table(name = "deadlines")
 public class DeadlineEntity {
 
     @Id
@@ -23,11 +23,13 @@ public class DeadlineEntity {
     private Long id;
 
     @ManyToOne
-    @JoinColumn  (name = "syllabi_id")
+    @JoinColumn(name = "syllabi_id")
+    @org.hibernate.annotations.OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
     private SyllabiEntity syllabiEntity;
 
     @ManyToOne
-    @JoinColumn  (name = "course_id")
+    @JoinColumn(name = "course_id")
+    @org.hibernate.annotations.OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
     private CourseEntity courseEntity;
 
     private String description;
@@ -35,13 +37,13 @@ public class DeadlineEntity {
     private LocalDate due_date;
     private LocalTime due_time;
 
-    @Column (updatable = false)
+    @Column(updatable = false)
     private LocalDateTime created_at;
     private Boolean is_confirmed;
     private Boolean is_completed;
 
     @PrePersist
-    public void onCreate(){
+    public void onCreate() {
         this.created_at = LocalDateTime.now();
     }
 }

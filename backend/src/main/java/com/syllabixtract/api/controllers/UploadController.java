@@ -6,7 +6,6 @@ import com.syllabixtract.api.domain.entities.*;
 import com.syllabixtract.api.repositories.*;
 import com.syllabixtract.api.services.GeminiService;
 import com.syllabixtract.api.services.LlamaParseService;
-import com.syllabixtract.api.services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,8 +49,6 @@ public class UploadController {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            // Get the logged-in user — create them on the fly if the sync hasn't happened
-            // yet
             String auth0Id = authentication.getName();
             UserEntity user = userRepository.findByAuth0Id(auth0Id)
                     .orElseGet(() -> {
@@ -64,7 +61,6 @@ public class UploadController {
                         return userRepository.save(newUser);
                     });
 
-            // Save syllabi record
             SyllabiEntity syllabi = SyllabiEntity.builder()
                     .file_name(file.getOriginalFilename())
                     .file_type(file.getContentType())
@@ -73,7 +69,6 @@ public class UploadController {
                     .build();
             syllabiRepository.save(syllabi);
 
-            // Create parse job with PENDING status
             ParseJobEntity parseJob = ParseJobEntity.builder()
                     .syllabiEntity(syllabi)
                     .status("PENDING")
@@ -82,34 +77,31 @@ public class UploadController {
                     .build();
             parseJobRepository.save(parseJob);
 
-            // Step 1: LlamaParse
             System.out.println("Step 1: Sending to LlamaParse...");
             String rawSyllabusText = llamaParseService.parseDocument(file);
             syllabi.setRaw_text(rawSyllabusText);
             syllabiRepository.save(syllabi);
 
-            // Step 2: Gemini
             System.out.println("Step 2: Sending to Gemini...");
             String structuredJsonData = geminiService.extractScheduleAsJson(rawSyllabusText);
 
             ObjectMapper mapper = new ObjectMapper();
             ParsedSyllabusDTO parsed = mapper.readValue(structuredJsonData, ParsedSyllabusDTO.class);
 
-            // Save course
+            // CHANGED: Save course and immediately assign the ID to the DTO
             CourseEntity course = CourseEntity.builder()
                     .user(user)
                     .course_code(parsed.getCourse_code())
                     .course_name(parsed.getCourse_name())
                     .created_at(LocalDateTime.now())
                     .build();
-            coursesRepository.save(course);
+            course = coursesRepository.save(course);
+            parsed.setId(course.getId());
 
-            // Link syllabi to course
             syllabi.setCourse(course);
             syllabi.setIs_parsed(true);
             syllabiRepository.save(syllabi);
 
-            // Save each deadline
             if (parsed.getDeadlines() != null) {
                 for (var d : parsed.getDeadlines()) {
                     LocalDate dueDate = null;
@@ -132,11 +124,13 @@ public class UploadController {
                             .is_confirmed(false)
                             .is_completed(false)
                             .build();
-                    deadlineRepository.save(deadline);
+
+                    // CHANGED: Save deadline and immediately assign the ID to the DTO
+                    deadline = deadlineRepository.save(deadline);
+                    d.setId(deadline.getId());
                 }
             }
 
-            // Mark parse job as complete
             parseJob.setStatus("COMPLETE");
             parseJob.setCompleted_at(LocalDateTime.now());
             parseJobRepository.save(parseJob);

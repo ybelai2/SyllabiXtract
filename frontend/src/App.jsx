@@ -26,7 +26,6 @@ function App() {
   const [uploadStatus, setUploadStatus] = useState(false);
   const [extractedData, setExtractedData] = useState([]);
 
-  // CHANGED: Added support for .doc and .docx file validation
   const handleFileChange = (event) => {
     const selectedFiles = Array.from(event.target.files || event.dataTransfer.files);
     
@@ -47,10 +46,8 @@ function App() {
       alert("Some files were skipped. Please select only PDF or Word documents.");
     }
     
-    // Add new valid files to the existing queue
     setFiles(prev => [...prev, ...validFiles]);
     
-    // Reset the input so the same files can be selected again if needed
     if (event.target.value) {
       event.target.value = '';
     }
@@ -71,7 +68,6 @@ function App() {
     try {
       const token = await getAccessTokenSilently();
 
-      // Create an array of promises so they upload at the same time
       const uploadPromises = files.map(async (file) => {
         const formData = new FormData();
         formData.append('file', file);
@@ -94,7 +90,6 @@ function App() {
         }
       });
 
-      // Wait for all uploads to finish. allSettled prevents one failure from crashing the rest.
       const results = await Promise.allSettled(uploadPromises);
 
       const successfulEvents = [];
@@ -108,13 +103,11 @@ function App() {
         }
       });
 
-      // Add the successful ones to the calendar
       if (successfulEvents.length > 0) {
         setExtractedData(prev => [...prev, ...successfulEvents]);
-        setFiles([]); // Clear queue only if we succeeded
+        setFiles([]); 
       }
 
-      // Warn the user if any specific files failed
       if (errors.length > 0) {
         alert("Some files failed to process:\n" + errors.join('\n'));
       }
@@ -151,7 +144,6 @@ function App() {
   return (
     <div className="min-h-screen w-full relative flex flex-col items-center font-sans overflow-x-hidden">
       
-      {/* WAVY STRAND-LIKE AURORA BACKGROUND */}
       <div className={`fixed inset-0 z-0 transition-colors duration-1000 overflow-hidden ${darkMode ? 'bg-[#050810]' : 'bg-slate-50'}`}>
         <style>{`
           @keyframes auroraFlow {
@@ -216,6 +208,7 @@ function App() {
             {extractedData.length > 0 && (
               <SyllabusCalendar 
                 data={extractedData} 
+                setData={setExtractedData}
                 darkMode={darkMode} 
               />
             )}
