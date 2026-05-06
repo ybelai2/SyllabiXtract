@@ -1,9 +1,9 @@
 # SyllabiXtract
 
 **Team Members:** Richard Savoca | Brendon Young | William Nwafor | Yhannes Belai | Sinit Mebrahtom
-
 ---
 ---
+**Link to Hosted Website:** https://syllabi-xtract.vercel.app/
 
 ## Description
 *SyllabiXtract is a college course syllabus extractor utilizing AI/NLP extraction for conversion into calendar-based reminders.*
