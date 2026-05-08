@@ -1,6 +1,6 @@
 # SyllabiXtract
 
-**Team Members:** Richard Savoca | Brendon Young | William Nwafor | Yhannes Belai | Sinit Mebrahtom
+**Team Members:** Richard Savoca | Brendon Young | William Nwafor | Yohannes Belai | Sinit Mebrahtom
 ---
 ---
 **Link to Hosted Website:** https://syllabi-xtract.vercel.app/
