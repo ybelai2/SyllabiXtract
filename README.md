@@ -1,23 +1,30 @@
 # SyllabiXtract
 
-**Team Members:** Richard Savoca | Brendon Young | William Nwafor | Yohannes Belai | Sinit Mebrahtom
+**Turn course syllabi into a consolidated, editable deadline calendar.**
+
+[Try the hosted application](https://syllabi-xtract.vercel.app/) · [Browse source](https://github.com/ybelai2/SyllabiXtract)
+
+SyllabiXtract is a **collaborative full-stack course project**. Students upload PDF, DOC, or DOCX syllabi; the application uses document processing and language-model extraction to organize assignments, exams, and deadlines into a user-specific calendar.
+
+### At a glance
+
+| Layer | Implementation |
+| --- | --- |
+| Web interface | React, Vite, Tailwind CSS |
+| Backend | Java 17, Spring Boot, Spring Security |
+| Database | PostgreSQL + Hibernate/JPA |
+| Authentication | Auth0 |
+| Document/AI integrations | LlamaParse, Gemini |
+
+**Engineering questions this project addresses:** connecting authenticated UI and API flows, converting loosely structured documents into structured events, and storing user-specific calendar changes.
+
+**Team:** Richard Savoca · Brendon Young · William Nwafor · Yohannes Belai · Sinit Mebrahtom.
+
+> This repository describes a team deliverable. Individual code ownership is not claimed here; inspect commit history and pull requests for contributions. AI-generated dates must be reviewed against the original syllabus before they are trusted.
+
 ---
----
-**Link to Hosted Website:** https://syllabi-xtract.vercel.app/
 
-## Description
-*SyllabiXtract is a college course syllabus extractor utilizing AI/NLP extraction for conversion into calendar-based reminders.*
-
-This full-stack web application is designed to help students automatically extract deadlines, exams, and assignments from class syllabi (PDF, DOC, DOCX) and compile them into a single, interactive master calendar. It utilizes LLMs to parse documents and features a secure, user-specific PostgreSQL database.
-
-**Tech Stack:**
-* **Frontend:** React.js, Vite, TailwindCSS, Auth0 React SDK
-* **Backend:** Java 17, Spring Boot, Spring Security, Hibernate (JPA)
-* **Database:** PostgreSQL
-* **External APIs:** LlamaParse (Document OCR), Google Gemini 2.5 Flash (Data Extraction), Auth0 (Authentication)
-
----
-
+## Installation and local development
 ## 1. Instructions for Installing Necessary Software
 
 To run this project locally, ensure you have the following software installed on your machine.
@@ -71,7 +78,7 @@ Create a `.env` file in the root of the `frontend` directory and add the Auth0 k
 ```env
 VITE_AUTH0_DOMAIN=dev-evpwqsgmn03lqsfk.us.auth0.com
 VITE_AUTH0_CLIENT_ID=SeOofXeNJOUQSgA7uGbBnFSgl7pJhWej
-VITE_AUTH0_AUDIENCE=[https://api.syllabixtract.com](https://api.syllabixtract.com)
+VITE_AUTH0_AUDIENCE=https://api.syllabixtract.com
 ```
 
 **2. Backend Configuration**
@@ -92,8 +99,8 @@ spring.jpa.hibernate.ddl-auto=update
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 
 # Auth0 Security Variables
-spring.security.oauth2.resourceserver.jwt.issuer-uri=[https://dev-evpwqsgmn03lqsfk.us.auth0.com/](https://dev-evpwqsgmn03lqsfk.us.auth0.com/)
-auth0.audience=[https://api.syllabixtract.com](https://api.syllabixtract.com)
+spring.security.oauth2.resourceserver.jwt.issuer-uri=https://dev-evpwqsgmn03lqsfk.us.auth0.com/
+auth0.audience=https://api.syllabixtract.com
 
 # API Keys
 GEMINI_API_KEY=your_gemini_api_key_here
